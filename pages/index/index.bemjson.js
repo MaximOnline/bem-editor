@@ -10,11 +10,6 @@
 		block: 'header',
 		content:[
 			{
-				block : 'icon',
-	    		mods : { social : 'twitter' }
-			}
-			,
-			{
 				elem: 'title',
 				tag: 'h1',
 				content: 'Maximum Editor'
@@ -22,39 +17,40 @@
 		]
 	},
 	{
-		block: 'content',
+		block: 'editer',
 		content: [
-			{block: 'left', content:[
-				{block: 'article-list', content:[{
-					block: 'article-item',
-					content: [{
-						elem: 'title',
-						content: 'Удой скота в РК удвоился'
-					},{
-						elem: 'desc',
-						content: 'Доярки Республики рапортуют о невиданном доселе удое скота.'
-					}]
-				},{
-					block: 'article-item',
-					content: [{
-						elem: 'title',
-						content: 'Ksenia'
-					},{
-						elem: 'desc',
-						content: 'Доярки Республики рапортуют о невиданном доселе удое скота.'
-					}]
-				},{
-					block: 'article-item',
-					content: [{
-						elem: 'title',
-						content: 'Roxas'
-					},{
-						elem: 'desc',
-						content: 'Доярки Республики рапортуют о невиданном доселе удое скота.'
-					}]
-				}]}
-			]},
-			{block: 'right', content:['Here is description']}
+			{
+				block: 'panel', 
+				content: [
+					{
+						block: 'button',
+						js: {'add':'text'},
+						mods: {theme: 'normal', size: 'xl', type: 'maxim'},
+						text: 'T'
+					},
+					{
+						block: 'button',
+						js: {'add':'image'},
+						mods: {theme: 'normal', size: 'xl', type: 'maxim'},
+						text: 'I'
+					},
+					{
+						block: 'button',
+						js: {'add':'video'},
+						mods: {theme: 'normal', size: 'xl', type: 'maxim'},
+						text: 'V'
+					},
+					{
+						block: 'button',
+						js: {'add':'template'},
+						mods: {theme: 'normal', size: 'xl', type: 'maxim'},
+						text: 'TPL'
+					}
+				]
+			},
+			{
+				block: 'content'
+			}
 		]
 	}
 	]

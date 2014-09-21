@@ -29,8 +29,14 @@ dropRequireCache(require, require.resolve("../../libs/bem-core/desktop.blocks/pa
 require("../../libs/bem-core/desktop.blocks/page/__css/page__css.bh.js")(bh);
 dropRequireCache(require, require.resolve("../../libs/bem-core/common.blocks/page/__js/page__js.bh.js"));
 require("../../libs/bem-core/common.blocks/page/__js/page__js.bh.js")(bh);
-dropRequireCache(require, require.resolve("../../libs/bem-components/common.blocks/icon/icon.bh.js"));
-require("../../libs/bem-components/common.blocks/icon/icon.bh.js")(bh);
+dropRequireCache(require, require.resolve("../../common.blocks/panel/panel.bh.js"));
+require("../../common.blocks/panel/panel.bh.js")(bh);
+dropRequireCache(require, require.resolve("../../libs/bem-components/common.blocks/button/button.bh.js"));
+require("../../libs/bem-components/common.blocks/button/button.bh.js")(bh);
+dropRequireCache(require, require.resolve("../../libs/bem-components/common.blocks/button/_focused/button_focused.bh.js"));
+require("../../libs/bem-components/common.blocks/button/_focused/button_focused.bh.js")(bh);
+dropRequireCache(require, require.resolve("../../libs/bem-components/common.blocks/button/__text/button__text.bh.js"));
+require("../../libs/bem-components/common.blocks/button/__text/button__text.bh.js")(bh);
 dropRequireCache(require, require.resolve("../../libs/bem-core/common.blocks/page/page.bh.js"));
 require("../../libs/bem-core/common.blocks/page/page.bh.js")(bh);
 dropRequireCache(require, require.resolve("../../libs/bem-core/desktop.blocks/page/page.bh.js"));

@@ -73,38 +73,80 @@ exports.deps = [
         "block": "header"
     },
     {
-        "block": "icon"
-    },
-    {
-        "block": "icon",
-        "mod": "social"
-    },
-    {
         "block": "header",
         "elem": "title"
     },
     {
+        "block": "editer"
+    },
+    {
+        "block": "panel"
+    },
+    {
+        "block": "button"
+    },
+    {
+        "block": "button",
+        "mod": "focused"
+    },
+    {
+        "block": "button",
+        "mod": "hovered"
+    },
+    {
+        "block": "button",
+        "mod": "disabled"
+    },
+    {
+        "block": "button",
+        "mod": "pressed"
+    },
+    {
+        "block": "button",
+        "elem": "text"
+    },
+    {
+        "block": "jquery",
+        "elem": "event"
+    },
+    {
+        "block": "jquery",
+        "elem": "event",
+        "mod": "type"
+    },
+    {
+        "block": "jquery",
+        "elem": "event",
+        "mod": "type",
+        "val": "pointerclick"
+    },
+    {
+        "block": "jquery",
+        "elem": "event",
+        "mod": "type",
+        "val": "pointernative"
+    },
+    {
+        "block": "keyboard",
+        "elem": "codes"
+    },
+    {
+        "block": "control"
+    },
+    {
+        "block": "button",
+        "mod": "theme"
+    },
+    {
+        "block": "button",
+        "mod": "size"
+    },
+    {
+        "block": "button",
+        "mod": "type"
+    },
+    {
         "block": "content"
-    },
-    {
-        "block": "left"
-    },
-    {
-        "block": "article-list"
-    },
-    {
-        "block": "article-item"
-    },
-    {
-        "block": "article-item",
-        "elem": "title"
-    },
-    {
-        "block": "article-item",
-        "elem": "desc"
-    },
-    {
-        "block": "right"
     },
     {
         "block": "page"
@@ -121,8 +163,50 @@ exports.deps = [
         "val": "js"
     },
     {
-        "block": "icon",
-        "mod": "social",
-        "val": "twitter"
+        "block": "button",
+        "mod": "focused",
+        "val": "yes"
+    },
+    {
+        "block": "button",
+        "mod": "hovered",
+        "val": "yes"
+    },
+    {
+        "block": "button",
+        "mod": "disabled",
+        "val": "yes"
+    },
+    {
+        "block": "button",
+        "mod": "pressed",
+        "val": "yes"
+    },
+    {
+        "block": "jquery",
+        "elem": "event",
+        "mod": "type",
+        "val": "pointer"
+    },
+    {
+        "block": "jquery",
+        "elem": "event",
+        "mod": "type",
+        "val": "pointerpressrelease"
+    },
+    {
+        "block": "button",
+        "mod": "theme",
+        "val": "normal"
+    },
+    {
+        "block": "button",
+        "mod": "size",
+        "val": "xl"
+    },
+    {
+        "block": "button",
+        "mod": "type",
+        "val": "maxim"
     }
 ];

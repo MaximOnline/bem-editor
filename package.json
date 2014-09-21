@@ -1,0 +1,28 @@
+{
+  "name": "bem-editor",
+  "version": "0.0.0",
+  "description": "Ksenia, Artem, Kolya",
+  "main": "index.js",
+  "dependencies": {
+    "enb-bh": "*",
+    "bh": "*",
+    "enb-modules": "*",
+    "enb": "*",
+    "enb-diverse-js": "*",
+    "ym": "*"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MaximOnline/bem-editor.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MaximOnline/bem-editor/issues"
+  },
+  "homepage": "https://github.com/MaximOnline/bem-editor"
+}

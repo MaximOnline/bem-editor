@@ -1742,6 +1742,2011 @@ provide(
 });
 
 /* end: ../../libs/bem-core/common.blocks/i-bem/__dom/_init/i-bem__dom_init.js */
+/* begin: ../../libs/bem-components/common.blocks/button/button.js */
+/**
+ * @module button
+ */
+
+modules.define(
+    'button',
+    ['i-bem__dom', 'control', 'jquery', 'dom', 'functions', 'keyboard__codes'],
+    function(provide, BEMDOM, Control, $, dom, functions, keyCodes) {
+
+/**
+ * @exports
+ * @class button
+ * @augments control
+ * @bem
+ */
+provide(BEMDOM.decl({ block : this.name, baseBlock : Control }, /** @lends button.prototype */{
+    beforeSetMod : {
+        'pressed' : {
+            'true' : function() {
+                return !this.hasMod('disabled') || this.hasMod('togglable');
+            }
+        },
+
+        'focused' : {
+            '' : function() {
+                return !this._isPointerPressInProgress;
+            }
+        }
+    },
+
+    onSetMod : {
+        'js' : {
+            'inited' : function() {
+                this.__base.apply(this, arguments);
+                this._isPointerPressInProgress = false;
+                this._focusedByPointer = false;
+            }
+        },
+
+        'disabled' : {
+            'true' : function() {
+                this.__base.apply(this, arguments);
+                this.hasMod('togglable') || this.delMod('pressed');
+            }
+        },
+
+        'focused' : {
+            'true' : function() {
+                this.__base.apply(this, arguments);
+                this._focusedByPointer || this.setMod('focused-hard');
+            },
+
+            '' : function() {
+                this.__base.apply(this, arguments);
+                this.delMod('focused-hard');
+            }
+        }
+    },
+
+    /**
+     * Returns text of the button
+     * @returns {String}
+     */
+    getText : function() {
+        return this.elem('text').text();
+    },
+
+    /**
+     * Sets text to the button
+     * @param {String} text
+     * @returns {button} this
+     */
+    setText : function(text) {
+        this.elem('text').text(text || '');
+        return this;
+    },
+
+    _onFocus : function() {
+        if(this._isPointerPressInProgress) return;
+
+        this.__base.apply(this, arguments);
+        this
+            .bindToWin('unload', this._onUnload) // TODO: WTF???
+            .bindTo('control', 'keydown', this._onKeyDown);
+    },
+
+    _onBlur : function() {
+        this
+            .unbindFromWin('unload', this._onUnload)
+            .unbindFrom('control', 'keydown', this._onKeyDown)
+            .__base.apply(this, arguments);
+    },
+
+    _onUnload : function() {
+        this.delMod('focused');
+    },
+
+    _onPointerPress : function() {
+        if(!this.hasMod('disabled')) {
+            this._isPointerPressInProgress = true;
+            this
+                .bindToDoc('pointerrelease', this._onPointerRelease)
+                .setMod('pressed');
+        }
+    },
+
+    _onPointerRelease : function(e) {
+        this._isPointerPressInProgress = false;
+        this.unbindFromDoc('pointerrelease', this._onPointerRelease);
+
+        if(dom.contains(this.elem('control'), $(e.target))) {
+            this._focusedByPointer = true;
+            this._focus();
+            this._focusedByPointer = false;
+            this
+                ._updateChecked()
+                .emit('click');
+        } else {
+            this._blur();
+        }
+
+        this.delMod('pressed');
+    },
+
+    _onKeyDown : function(e) {
+        if(this.hasMod('disabled')) return;
+
+        var keyCode = e.keyCode;
+        if(keyCode === keyCodes.SPACE || keyCode === keyCodes.ENTER) {
+            this
+                .unbindFrom('control', 'keydown', this._onKeyDown)
+                .bindTo('control', 'keyup', this._onKeyUp)
+                ._updateChecked()
+                .setMod('pressed');
+        }
+    },
+
+    _onKeyUp : function(e) {
+        this
+            .unbindFrom('control', 'keyup', this._onKeyUp)
+            .bindTo('control', 'keydown', this._onKeyDown)
+            .delMod('pressed');
+
+        e.keyCode === keyCodes.SPACE && this._doAction();
+
+        this.emit('click');
+    },
+
+    _updateChecked : function() {
+        this.hasMod('togglable') &&
+            (this.hasMod('togglable', 'check')?
+                this.toggleMod('checked') :
+                this.setMod('checked'));
+
+        return this;
+    },
+
+    _doAction : functions.noop
+}, /** @lends button */{
+    live : function() {
+        this.liveBindTo('control', 'pointerpress', this.prototype._onPointerPress);
+        return this.__base.apply(this, arguments);
+    }
+}));
+
+});
+
+/* end: ../../libs/bem-components/common.blocks/button/button.js */
+/* begin: ../../libs/bem-core/common.blocks/jquery/__event/_type/jquery__event_type_pointerclick.js */
+/**
+ * FastClick to jQuery module wrapper.
+ * @see https://github.com/ftlabs/fastclick
+ */
+modules.define('jquery', function(provide, $) {
+
+/**
+ * FastClick: polyfill to remove click delays on browsers with touch UIs.
+ *
+ * @version 0.6.11
+ * @copyright The Financial Times Limited [All Rights Reserved]
+ * @license MIT License (see LICENSE.txt)
+ */
+
+/**
+ * @class FastClick
+ */
+
+/**
+ * Instantiate fast-clicking listeners on the specificed layer.
+ *
+ * @constructor
+ * @param {Element} layer The layer to listen on
+ */
+function FastClick(layer) {
+    'use strict';
+    var oldOnClick, self = this;
+
+
+    /**
+     * Whether a click is currently being tracked.
+     *
+     * @type boolean
+     */
+    this.trackingClick = false;
+
+
+    /**
+     * Timestamp for when when click tracking started.
+     *
+     * @type number
+     */
+    this.trackingClickStart = 0;
+
+
+    /**
+     * The element being tracked for a click.
+     *
+     * @type EventTarget
+     */
+    this.targetElement = null;
+
+
+    /**
+     * X-coordinate of touch start event.
+     *
+     * @type number
+     */
+    this.touchStartX = 0;
+
+
+    /**
+     * Y-coordinate of touch start event.
+     *
+     * @type number
+     */
+    this.touchStartY = 0;
+
+
+    /**
+     * ID of the last touch, retrieved from Touch.identifier.
+     *
+     * @type number
+     */
+    this.lastTouchIdentifier = 0;
+
+
+    /**
+     * Touchmove boundary, beyond which a click will be cancelled.
+     *
+     * @type number
+     */
+    this.touchBoundary = 10;
+
+
+    /**
+     * The FastClick layer.
+     *
+     * @type Element
+     */
+    this.layer = layer;
+
+    if (!layer || !layer.nodeType) {
+        throw new TypeError('Layer must be a document node');
+    }
+
+    /** @type function() */
+    this.onClick = function() { return FastClick.prototype.onClick.apply(self, arguments); };
+
+    /** @type function() */
+    this.onMouse = function() { return FastClick.prototype.onMouse.apply(self, arguments); };
+
+    /** @type function() */
+    this.onTouchStart = function() { return FastClick.prototype.onTouchStart.apply(self, arguments); };
+
+    /** @type function() */
+    this.onTouchMove = function() { return FastClick.prototype.onTouchMove.apply(self, arguments); };
+
+    /** @type function() */
+    this.onTouchEnd = function() { return FastClick.prototype.onTouchEnd.apply(self, arguments); };
+
+    /** @type function() */
+    this.onTouchCancel = function() { return FastClick.prototype.onTouchCancel.apply(self, arguments); };
+
+    if (FastClick.notNeeded(layer)) {
+        return;
+    }
+
+    // Set up event handlers as required
+    if (this.deviceIsAndroid) {
+        layer.addEventListener('mouseover', this.onMouse, true);
+        layer.addEventListener('mousedown', this.onMouse, true);
+        layer.addEventListener('mouseup', this.onMouse, true);
+    }
+
+    layer.addEventListener('click', this.onClick, true);
+    layer.addEventListener('touchstart', this.onTouchStart, false);
+    layer.addEventListener('touchmove', this.onTouchMove, false);
+    layer.addEventListener('touchend', this.onTouchEnd, false);
+    layer.addEventListener('touchcancel', this.onTouchCancel, false);
+
+    // Hack is required for browsers that don't support Event#stopImmediatePropagation (e.g. Android 2)
+    // which is how FastClick normally stops click events bubbling to callbacks registered on the FastClick
+    // layer when they are cancelled.
+    if (!Event.prototype.stopImmediatePropagation) {
+        layer.removeEventListener = function(type, callback, capture) {
+            var rmv = Node.prototype.removeEventListener;
+            if (type === 'click') {
+                rmv.call(layer, type, callback.hijacked || callback, capture);
+            } else {
+                rmv.call(layer, type, callback, capture);
+            }
+        };
+
+        layer.addEventListener = function(type, callback, capture) {
+            var adv = Node.prototype.addEventListener;
+            if (type === 'click') {
+                adv.call(layer, type, callback.hijacked || (callback.hijacked = function(event) {
+                    if (!event.propagationStopped) {
+                        callback(event);
+                    }
+                }), capture);
+            } else {
+                adv.call(layer, type, callback, capture);
+            }
+        };
+    }
+
+    // If a handler is already declared in the element's onclick attribute, it will be fired before
+    // FastClick's onClick handler. Fix this by pulling out the user-defined handler function and
+    // adding it as listener.
+    if (typeof layer.onclick === 'function') {
+
+        // Android browser on at least 3.2 requires a new reference to the function in layer.onclick
+        // - the old one won't work if passed to addEventListener directly.
+        oldOnClick = layer.onclick;
+        layer.addEventListener('click', function(event) {
+            oldOnClick(event);
+        }, false);
+        layer.onclick = null;
+    }
+}
+
+
+/**
+ * Android requires exceptions.
+ *
+ * @type boolean
+ */
+FastClick.prototype.deviceIsAndroid = navigator.userAgent.indexOf('Android') > 0;
+
+
+/**
+ * iOS requires exceptions.
+ *
+ * @type boolean
+ */
+FastClick.prototype.deviceIsIOS = /iP(ad|hone|od)/.test(navigator.userAgent);
+
+
+/**
+ * iOS 4 requires an exception for select elements.
+ *
+ * @type boolean
+ */
+FastClick.prototype.deviceIsIOS4 = FastClick.prototype.deviceIsIOS && (/OS 4_\d(_\d)?/).test(navigator.userAgent);
+
+
+/**
+ * iOS 6.0(+?) requires the target element to be manually derived
+ *
+ * @type boolean
+ */
+FastClick.prototype.deviceIsIOSWithBadTarget = FastClick.prototype.deviceIsIOS && (/OS ([6-9]|\d{2})_\d/).test(navigator.userAgent);
+
+
+/**
+ * Determine whether a given element requires a native click.
+ *
+ * @param {EventTarget|Element} target Target DOM element
+ * @returns {boolean} Returns true if the element needs a native click
+ */
+FastClick.prototype.needsClick = function(target) {
+    'use strict';
+    switch (target.nodeName.toLowerCase()) {
+
+    // Don't send a synthetic click to disabled inputs (issue #62)
+    case 'button':
+    case 'select':
+    case 'textarea':
+        if (target.disabled) {
+            return true;
+        }
+
+        break;
+    case 'input':
+
+        // File inputs need real clicks on iOS 6 due to a browser bug (issue #68)
+        if ((this.deviceIsIOS && target.type === 'file') || target.disabled) {
+            return true;
+        }
+
+        break;
+    case 'label':
+    case 'video':
+        return true;
+    }
+
+    return (/\bneedsclick\b/).test(target.className);
+};
+
+
+/**
+ * Determine whether a given element requires a call to focus to simulate click into element.
+ *
+ * @param {EventTarget|Element} target Target DOM element
+ * @returns {boolean} Returns true if the element requires a call to focus to simulate native click.
+ */
+FastClick.prototype.needsFocus = function(target) {
+    'use strict';
+    switch (target.nodeName.toLowerCase()) {
+    case 'textarea':
+        return true;
+    case 'select':
+        return !this.deviceIsAndroid;
+    case 'input':
+        switch (target.type) {
+        case 'button':
+        case 'checkbox':
+        case 'file':
+        case 'image':
+        case 'radio':
+        case 'submit':
+            return false;
+        }
+
+        // No point in attempting to focus disabled inputs
+        return !target.disabled && !target.readOnly;
+    default:
+        return (/\bneedsfocus\b/).test(target.className);
+    }
+};
+
+
+/**
+ * Send a click event to the specified element.
+ *
+ * @param {EventTarget|Element} targetElement
+ * @param {Event} event
+ */
+FastClick.prototype.sendClick = function(targetElement, event) {
+    'use strict';
+    var clickEvent, touch;
+
+    // On some Android devices activeElement needs to be blurred otherwise the synthetic click will have no effect (#24)
+    if (document.activeElement && document.activeElement !== targetElement) {
+        document.activeElement.blur();
+    }
+
+    touch = event.changedTouches[0];
+
+    // Synthesise a click event, with an extra attribute so it can be tracked
+    clickEvent = document.createEvent('MouseEvents');
+    clickEvent.initMouseEvent(this.determineEventType(targetElement), true, true, window, 1, touch.screenX, touch.screenY, touch.clientX, touch.clientY, false, false, false, false, 0, null);
+    clickEvent.forwardedTouchEvent = true;
+    targetElement.dispatchEvent(clickEvent);
+};
+
+FastClick.prototype.determineEventType = function(targetElement) {
+    'use strict';
+
+    //Issue #159: Android Chrome Select Box does not open with a synthetic click event
+    if (this.deviceIsAndroid && targetElement.tagName.toLowerCase() === 'select') {
+        return 'mousedown';
+    }
+
+    return 'click';
+};
+
+
+/**
+ * @param {EventTarget|Element} targetElement
+ */
+FastClick.prototype.focus = function(targetElement) {
+    'use strict';
+    var length;
+
+    // Issue #160: on iOS 7, some input elements (e.g. date datetime) throw a vague TypeError on setSelectionRange. These elements don't have an integer value for the selectionStart and selectionEnd properties, but unfortunately that can't be used for detection because accessing the properties also throws a TypeError. Just check the type instead. Filed as Apple bug #15122724.
+    if (this.deviceIsIOS && targetElement.setSelectionRange && targetElement.type.indexOf('date') !== 0 && targetElement.type !== 'time') {
+        length = targetElement.value.length;
+        targetElement.setSelectionRange(length, length);
+    } else {
+        targetElement.focus();
+    }
+};
+
+
+/**
+ * Check whether the given target element is a child of a scrollable layer and if so, set a flag on it.
+ *
+ * @param {EventTarget|Element} targetElement
+ */
+FastClick.prototype.updateScrollParent = function(targetElement) {
+    'use strict';
+    var scrollParent, parentElement;
+
+    scrollParent = targetElement.fastClickScrollParent;
+
+    // Attempt to discover whether the target element is contained within a scrollable layer. Re-check if the
+    // target element was moved to another parent.
+    if (!scrollParent || !scrollParent.contains(targetElement)) {
+        parentElement = targetElement;
+        do {
+            if (parentElement.scrollHeight > parentElement.offsetHeight) {
+                scrollParent = parentElement;
+                targetElement.fastClickScrollParent = parentElement;
+                break;
+            }
+
+            parentElement = parentElement.parentElement;
+        } while (parentElement);
+    }
+
+    // Always update the scroll top tracker if possible.
+    if (scrollParent) {
+        scrollParent.fastClickLastScrollTop = scrollParent.scrollTop;
+    }
+};
+
+
+/**
+ * @param {EventTarget} targetElement
+ * @returns {Element|EventTarget}
+ */
+FastClick.prototype.getTargetElementFromEventTarget = function(eventTarget) {
+    'use strict';
+
+    // On some older browsers (notably Safari on iOS 4.1 - see issue #56) the event target may be a text node.
+    if (eventTarget.nodeType === Node.TEXT_NODE) {
+        return eventTarget.parentNode;
+    }
+
+    return eventTarget;
+};
+
+
+/**
+ * On touch start, record the position and scroll offset.
+ *
+ * @param {Event} event
+ * @returns {boolean}
+ */
+FastClick.prototype.onTouchStart = function(event) {
+    'use strict';
+    var targetElement, touch, selection;
+
+    // Ignore multiple touches, otherwise pinch-to-zoom is prevented if both fingers are on the FastClick element (issue #111).
+    if (event.targetTouches.length > 1) {
+        return true;
+    }
+
+    targetElement = this.getTargetElementFromEventTarget(event.target);
+    touch = event.targetTouches[0];
+
+    if (this.deviceIsIOS) {
+
+        // Only trusted events will deselect text on iOS (issue #49)
+        selection = window.getSelection();
+        if (selection.rangeCount && !selection.isCollapsed) {
+            return true;
+        }
+
+        if (!this.deviceIsIOS4) {
+
+            // Weird things happen on iOS when an alert or confirm dialog is opened from a click event callback (issue #23):
+            // when the user next taps anywhere else on the page, new touchstart and touchend events are dispatched
+            // with the same identifier as the touch event that previously triggered the click that triggered the alert.
+            // Sadly, there is an issue on iOS 4 that causes some normal touch events to have the same identifier as an
+            // immediately preceeding touch event (issue #52), so this fix is unavailable on that platform.
+            if (touch.identifier === this.lastTouchIdentifier) {
+                event.preventDefault();
+                return false;
+            }
+
+            this.lastTouchIdentifier = touch.identifier;
+
+            // If the target element is a child of a scrollable layer (using -webkit-overflow-scrolling: touch) and:
+            // 1) the user does a fling scroll on the scrollable layer
+            // 2) the user stops the fling scroll with another tap
+            // then the event.target of the last 'touchend' event will be the element that was under the user's finger
+            // when the fling scroll was started, causing FastClick to send a click event to that layer - unless a check
+            // is made to ensure that a parent layer was not scrolled before sending a synthetic click (issue #42).
+            this.updateScrollParent(targetElement);
+        }
+    }
+
+    this.trackingClick = true;
+    this.trackingClickStart = event.timeStamp;
+    this.targetElement = targetElement;
+
+    this.touchStartX = touch.pageX;
+    this.touchStartY = touch.pageY;
+
+    // Prevent phantom clicks on fast double-tap (issue #36)
+    if ((event.timeStamp - this.lastClickTime) < 200) {
+        event.preventDefault();
+    }
+
+    return true;
+};
+
+
+/**
+ * Based on a touchmove event object, check whether the touch has moved past a boundary since it started.
+ *
+ * @param {Event} event
+ * @returns {boolean}
+ */
+FastClick.prototype.touchHasMoved = function(event) {
+    'use strict';
+    var touch = event.changedTouches[0], boundary = this.touchBoundary;
+
+    if (Math.abs(touch.pageX - this.touchStartX) > boundary || Math.abs(touch.pageY - this.touchStartY) > boundary) {
+        return true;
+    }
+
+    return false;
+};
+
+
+/**
+ * Update the last position.
+ *
+ * @param {Event} event
+ * @returns {boolean}
+ */
+FastClick.prototype.onTouchMove = function(event) {
+    'use strict';
+    if (!this.trackingClick) {
+        return true;
+    }
+
+    // If the touch has moved, cancel the click tracking
+    if (this.targetElement !== this.getTargetElementFromEventTarget(event.target) || this.touchHasMoved(event)) {
+        this.trackingClick = false;
+        this.targetElement = null;
+    }
+
+    return true;
+};
+
+
+/**
+ * Attempt to find the labelled control for the given label element.
+ *
+ * @param {EventTarget|HTMLLabelElement} labelElement
+ * @returns {Element|null}
+ */
+FastClick.prototype.findControl = function(labelElement) {
+    'use strict';
+
+    // Fast path for newer browsers supporting the HTML5 control attribute
+    if (labelElement.control !== undefined) {
+        return labelElement.control;
+    }
+
+    // All browsers under test that support touch events also support the HTML5 htmlFor attribute
+    if (labelElement.htmlFor) {
+        return document.getElementById(labelElement.htmlFor);
+    }
+
+    // If no for attribute exists, attempt to retrieve the first labellable descendant element
+    // the list of which is defined here: http://www.w3.org/TR/html5/forms.html#category-label
+    return labelElement.querySelector('button, input:not([type=hidden]), keygen, meter, output, progress, select, textarea');
+};
+
+
+/**
+ * On touch end, determine whether to send a click event at once.
+ *
+ * @param {Event} event
+ * @returns {boolean}
+ */
+FastClick.prototype.onTouchEnd = function(event) {
+    'use strict';
+    var forElement, trackingClickStart, targetTagName, scrollParent, touch, targetElement = this.targetElement;
+
+    if (!this.trackingClick) {
+        return true;
+    }
+
+    // Prevent phantom clicks on fast double-tap (issue #36)
+    if ((event.timeStamp - this.lastClickTime) < 200) {
+        this.cancelNextClick = true;
+        return true;
+    }
+
+    // Reset to prevent wrong click cancel on input (issue #156).
+    this.cancelNextClick = false;
+
+    this.lastClickTime = event.timeStamp;
+
+    trackingClickStart = this.trackingClickStart;
+    this.trackingClick = false;
+    this.trackingClickStart = 0;
+
+    // On some iOS devices, the targetElement supplied with the event is invalid if the layer
+    // is performing a transition or scroll, and has to be re-detected manually. Note that
+    // for this to function correctly, it must be called *after* the event target is checked!
+    // See issue #57; also filed as rdar://13048589 .
+    if (this.deviceIsIOSWithBadTarget) {
+        touch = event.changedTouches[0];
+
+        // In certain cases arguments of elementFromPoint can be negative, so prevent setting targetElement to null
+        targetElement = document.elementFromPoint(touch.pageX - window.pageXOffset, touch.pageY - window.pageYOffset) || targetElement;
+        targetElement.fastClickScrollParent = this.targetElement.fastClickScrollParent;
+    }
+
+    targetTagName = targetElement.tagName.toLowerCase();
+    if (targetTagName === 'label') {
+        forElement = this.findControl(targetElement);
+        if (forElement) {
+            this.focus(targetElement);
+            if (this.deviceIsAndroid) {
+                return false;
+            }
+
+            targetElement = forElement;
+        }
+    } else if (this.needsFocus(targetElement)) {
+
+        // Case 1: If the touch started a while ago (best guess is 100ms based on tests for issue #36) then focus will be triggered anyway. Return early and unset the target element reference so that the subsequent click will be allowed through.
+        // Case 2: Without this exception for input elements tapped when the document is contained in an iframe, then any inputted text won't be visible even though the value attribute is updated as the user types (issue #37).
+        if ((event.timeStamp - trackingClickStart) > 100 || (this.deviceIsIOS && window.top !== window && targetTagName === 'input')) {
+            this.targetElement = null;
+            return false;
+        }
+
+        this.focus(targetElement);
+
+        // Select elements need the event to go through on iOS 4, otherwise the selector menu won't open.
+        if (!this.deviceIsIOS4 || targetTagName !== 'select') {
+            this.targetElement = null;
+            event.preventDefault();
+        }
+
+        return false;
+    }
+
+    if (this.deviceIsIOS && !this.deviceIsIOS4) {
+
+        // Don't send a synthetic click event if the target element is contained within a parent layer that was scrolled
+        // and this tap is being used to stop the scrolling (usually initiated by a fling - issue #42).
+        scrollParent = targetElement.fastClickScrollParent;
+        if (scrollParent && scrollParent.fastClickLastScrollTop !== scrollParent.scrollTop) {
+            return true;
+        }
+    }
+
+    // Prevent the actual click from going though - unless the target node is marked as requiring
+    // real clicks or if it is in the whitelist in which case only non-programmatic clicks are permitted.
+    if (!this.needsClick(targetElement)) {
+        event.preventDefault();
+        this.sendClick(targetElement, event);
+    }
+
+    return false;
+};
+
+
+/**
+ * On touch cancel, stop tracking the click.
+ *
+ * @returns {void}
+ */
+FastClick.prototype.onTouchCancel = function() {
+    'use strict';
+    this.trackingClick = false;
+    this.targetElement = null;
+};
+
+
+/**
+ * Determine mouse events which should be permitted.
+ *
+ * @param {Event} event
+ * @returns {boolean}
+ */
+FastClick.prototype.onMouse = function(event) {
+    'use strict';
+
+    // If a target element was never set (because a touch event was never fired) allow the event
+    if (!this.targetElement) {
+        return true;
+    }
+
+    if (event.forwardedTouchEvent) {
+        return true;
+    }
+
+    // Programmatically generated events targeting a specific element should be permitted
+    if (!event.cancelable) {
+        return true;
+    }
+
+    // Derive and check the target element to see whether the mouse event needs to be permitted;
+    // unless explicitly enabled, prevent non-touch click events from triggering actions,
+    // to prevent ghost/doubleclicks.
+    if (!this.needsClick(this.targetElement) || this.cancelNextClick) {
+
+        // Prevent any user-added listeners declared on FastClick element from being fired.
+        if (event.stopImmediatePropagation) {
+            event.stopImmediatePropagation();
+        } else {
+
+            // Part of the hack for browsers that don't support Event#stopImmediatePropagation (e.g. Android 2)
+            event.propagationStopped = true;
+        }
+
+        // Cancel the event
+        event.stopPropagation();
+        event.preventDefault();
+
+        return false;
+    }
+
+    // If the mouse event is permitted, return true for the action to go through.
+    return true;
+};
+
+
+/**
+ * On actual clicks, determine whether this is a touch-generated click, a click action occurring
+ * naturally after a delay after a touch (which needs to be cancelled to avoid duplication), or
+ * an actual click which should be permitted.
+ *
+ * @param {Event} event
+ * @returns {boolean}
+ */
+FastClick.prototype.onClick = function(event) {
+    'use strict';
+    var permitted;
+
+    // It's possible for another FastClick-like library delivered with third-party code to fire a click event before FastClick does (issue #44). In that case, set the click-tracking flag back to false and return early. This will cause onTouchEnd to return early.
+    if (this.trackingClick) {
+        this.targetElement = null;
+        this.trackingClick = false;
+        return true;
+    }
+
+    // Very odd behaviour on iOS (issue #18): if a submit element is present inside a form and the user hits enter in the iOS simulator or clicks the Go button on the pop-up OS keyboard the a kind of 'fake' click event will be triggered with the submit-type input element as the target.
+    if (event.target.type === 'submit' && event.detail === 0) {
+        return true;
+    }
+
+    permitted = this.onMouse(event);
+
+    // Only unset targetElement if the click is not permitted. This will ensure that the check for !targetElement in onMouse fails and the browser's click doesn't go through.
+    if (!permitted) {
+        this.targetElement = null;
+    }
+
+    // If clicks are permitted, return true for the action to go through.
+    return permitted;
+};
+
+
+/**
+ * Remove all FastClick's event listeners.
+ *
+ * @returns {void}
+ */
+FastClick.prototype.destroy = function() {
+    'use strict';
+    var layer = this.layer;
+
+    if (this.deviceIsAndroid) {
+        layer.removeEventListener('mouseover', this.onMouse, true);
+        layer.removeEventListener('mousedown', this.onMouse, true);
+        layer.removeEventListener('mouseup', this.onMouse, true);
+    }
+
+    layer.removeEventListener('click', this.onClick, true);
+    layer.removeEventListener('touchstart', this.onTouchStart, false);
+    layer.removeEventListener('touchmove', this.onTouchMove, false);
+    layer.removeEventListener('touchend', this.onTouchEnd, false);
+    layer.removeEventListener('touchcancel', this.onTouchCancel, false);
+};
+
+
+/**
+ * Check whether FastClick is needed.
+ *
+ * @param {Element} layer The layer to listen on
+ */
+FastClick.notNeeded = function(layer) {
+    'use strict';
+    var metaViewport;
+
+    // Devices that don't support touch don't need FastClick
+    if (typeof window.ontouchstart === 'undefined') {
+        return true;
+    }
+
+    if ((/Chrome\/[0-9]+/).test(navigator.userAgent)) {
+
+        // Chrome on Android with user-scalable="no" doesn't need FastClick (issue #89)
+        if (FastClick.prototype.deviceIsAndroid) {
+            metaViewport = document.querySelector('meta[name=viewport]');
+            if (metaViewport && metaViewport.content.indexOf('user-scalable=no') !== -1) {
+                return true;
+            }
+
+        // Chrome desktop doesn't need FastClick (issue #15)
+        } else {
+            return true;
+        }
+    }
+
+    // IE10 with -ms-touch-action: none, which disables double-tap-to-zoom (issue #97)
+    if (layer.style.msTouchAction === 'none') {
+        return true;
+    }
+
+    return false;
+};
+
+
+/**
+ * Factory method for creating a FastClick object
+ *
+ * @param {Element} layer The layer to listen on
+ */
+FastClick.attach = function(layer) {
+    'use strict';
+    return new FastClick(layer);
+};
+
+var event = $.event.special.pointerclick = {
+        setup : function() {
+            $(this).on('click', event.handler);
+        },
+
+        teardown : function() {
+            $(this).off('click', event.handler);
+        },
+
+        handler : function(e) {
+            if(!e.button) {
+                e.type = 'pointerclick';
+                $.event.dispatch.apply(this, arguments);
+                e.type = 'click';
+            }
+        }
+    };
+
+$(function() {
+    FastClick.attach(document.body);
+    provide($);
+});
+
+});
+
+/* end: ../../libs/bem-core/common.blocks/jquery/__event/_type/jquery__event_type_pointerclick.js */
+/* begin: ../../libs/bem-core/common.blocks/jquery/__event/_type/jquery__event_type_pointernative.js */
+/**
+ * Basic pointer events polyfill
+ */
+;(function(global, factory) {
+
+if(typeof modules === 'object' && modules.isDefined('jquery')) {
+    modules.define('jquery', function(provide, $) {
+        factory(this.global, $);
+        provide($);
+    });
+} else if(typeof jQuery === 'function') {
+    factory(global, jQuery);
+}
+
+}(this, function(window, $) {
+
+// include "jquery-pointerevents.js"
+/*!
+ * Most of source code is taken from PointerEvents Polyfill
+ * written by Polymer Team (https://github.com/Polymer/PointerEvents)
+ * and licensed under the BSD License.
+ */
+
+var doc = document,
+    USE_NATIVE_MAP = window.Map && window.Map.prototype.forEach,
+    HAS_BITMAP_TYPE = window.MSPointerEvent && typeof window.MSPointerEvent.MSPOINTER_TYPE_MOUSE === 'number',
+    POINTERS_FN = function() { return this.size };
+
+// NOTE: Remove jQuery special fixes for pointerevents – we fix them ourself
+delete $.event.special.pointerenter;
+delete $.event.special.pointerleave;
+
+/**
+ * Returns a snapshot of inEvent, with writable properties.
+ *
+ * @param {Event} event An event that contains properties to copy.
+ * @returns {Object} An object containing shallow copies of `inEvent`'s
+ *    properties.
+ */
+function cloneEvent(event) {
+    var eventCopy = $.extend(new $.Event(), event);
+    if(event.preventDefault) {
+        eventCopy.preventDefault = function() {
+            event.preventDefault();
+        };
+    }
+    return eventCopy;
+}
+
+var MOUSE_PROPS = {
+        bubbles : false,
+        cancelable : false,
+        view : null,
+        detail : null,
+        screenX : 0,
+        screenY : 0,
+        clientX : 0,
+        clientY : 0,
+        ctrlKey : false,
+        altKey : false,
+        shiftKey : false,
+        metaKey : false,
+        button : 0,
+        relatedTarget : null,
+        pageX : 0,
+        pageY : 0
+    },
+    mouseProps = Object.keys(MOUSE_PROPS),
+    mousePropsLen = mouseProps.length,
+    mouseDefaults = mouseProps.map(function(prop) { return MOUSE_PROPS[prop] });
+
+/**
+ * Pointer event constructor
+ *
+ * @param {String} type
+ * @param {Object} [params]
+ * @returns {Event}
+ * @constructor
+ */
+function PointerEvent(type, params) {
+    params || (params = {});
+
+    var e = $.Event(type);
+
+    // define inherited MouseEvent properties
+    for(var i = 0, p; i < mousePropsLen; i++) {
+        p = mouseProps[i];
+        e[p] = params[p] || mouseDefaults[i];
+    }
+
+    e.buttons = params.buttons || 0;
+
+    // add x/y properties aliased to clientX/Y
+    e.x = e.clientX;
+    e.y = e.clientY;
+
+    // Spec requires that pointers without pressure specified use 0.5 for down
+    // state and 0 for up state.
+    var pressure = 0;
+    if(params.pressure) {
+        pressure = params.pressure;
+    } else {
+        pressure = e.buttons? 0.5 : 0;
+    }
+
+    // define the properties of the PointerEvent interface
+    e.pointerId = params.pointerId || 0;
+    e.width = params.width || 0;
+    e.height = params.height || 0;
+    e.pressure = pressure;
+    e.tiltX = params.tiltX || 0;
+    e.tiltY = params.tiltY || 0;
+    e.pointerType = params.pointerType || '';
+    e.hwTimestamp = params.hwTimestamp || 0;
+    e.isPrimary = params.isPrimary || false;
+
+    // add some common jQuery properties
+    e.which = params.which;
+
+    return e;
+}
+
+/**
+ * Implements a map of pointer states
+ * @returns {PointerMap}
+ * @constructor
+ */
+function PointerMap() {
+    if(USE_NATIVE_MAP) {
+        var m = new Map();
+        m.pointers = POINTERS_FN;
+        return m;
+    }
+
+    this.keys = [];
+    this.values = [];
+}
+
+PointerMap.prototype = {
+    set : function(id, event) {
+        var i = this.keys.indexOf(id);
+        if(i > -1) {
+            this.values[i] = event;
+        } else {
+            this.keys.push(id);
+            this.values.push(event);
+        }
+    },
+
+    has : function(id) {
+        return this.keys.indexOf(id) > -1;
+    },
+
+    'delete' : function(id) {
+        var i = this.keys.indexOf(id);
+        if(i > -1) {
+            this.keys.splice(i, 1);
+            this.values.splice(i, 1);
+        }
+    },
+
+    get : function(id) {
+        var i = this.keys.indexOf(id);
+        return this.values[i];
+    },
+
+    clear : function() {
+        this.keys.length = 0;
+        this.values.length = 0;
+    },
+
+    forEach : function(callback, ctx) {
+        var keys = this.keys;
+        this.values.forEach(function(v, i) {
+            callback.call(ctx, v, keys[i], this);
+        }, this);
+    },
+
+    pointers : function() {
+        return this.keys.length;
+    }
+};
+
+var pointermap = new PointerMap();
+
+var dispatcher = {
+    eventMap : {},
+    eventSourceList : [],
+
+    /**
+     * Add a new event source that will generate pointer events
+     */
+    registerSource : function(name, source) {
+        var newEvents = source.events;
+        if(newEvents) {
+            newEvents.forEach(function(e) {
+                source[e] && (this.eventMap[e] = function() { source[e].apply(source, arguments) });
+            }, this);
+            this.eventSourceList.push(source);
+        }
+    },
+
+    register : function(element) {
+        var len = this.eventSourceList.length;
+        for(var i = 0, es; (i < len) && (es = this.eventSourceList[i]); i++) {
+            // call eventsource register
+            es.register.call(es, element);
+        }
+    },
+
+    unregister : function(element) {
+        var l = this.eventSourceList.length;
+        for(var i = 0, es; (i < l) && (es = this.eventSourceList[i]); i++) {
+            // call eventsource register
+            es.unregister.call(es, element);
+        }
+    },
+
+    down : function(event) {
+        event.bubbles = true;
+        this.fireEvent('pointerdown', event);
+    },
+
+    move : function(event) {
+        event.bubbles = true;
+        this.fireEvent('pointermove', event);
+    },
+
+    up : function(event) {
+        event.bubbles = true;
+        this.fireEvent('pointerup', event);
+    },
+
+    enter : function(event) {
+        event.bubbles = false;
+        this.fireEvent('pointerenter', event);
+    },
+
+    leave : function(event) {
+        event.bubbles = false;
+        this.fireEvent('pointerleave', event);
+    },
+
+    over : function(event) {
+        event.bubbles = true;
+        this.fireEvent('pointerover', event);
+    },
+
+    out : function(event) {
+        event.bubbles = true;
+        this.fireEvent('pointerout', event);
+    },
+
+    cancel : function(event) {
+        event.bubbles = true;
+        this.fireEvent('pointercancel', event);
+    },
+
+    leaveOut : function(event) {
+        this.out(event);
+        if(!this.contains(event.target, event.relatedTarget)) {
+            this.leave(event);
+        }
+    },
+
+    enterOver : function(event) {
+        this.over(event);
+        if(!this.contains(event.target, event.relatedTarget)) {
+            this.enter(event);
+        }
+    },
+
+    contains : function(target, relatedTarget) {
+        return target === relatedTarget || $.contains(target, relatedTarget);
+    },
+
+    // LISTENER LOGIC
+    eventHandler : function(e) {
+        // This is used to prevent multiple dispatch of pointerevents from
+        // platform events. This can happen when two elements in different scopes
+        // are set up to create pointer events, which is relevant to Shadow DOM.
+        if(e._handledByPE) {
+            return;
+        }
+
+        var type = e.type, fn;
+        (fn = this.eventMap && this.eventMap[type]) && fn(e);
+
+        e._handledByPE = true;
+    },
+
+    /**
+     * Sets up event listeners
+     */
+    listen : function(target, events) {
+        events.forEach(function(e) {
+            this.addEvent(target, e);
+        }, this);
+    },
+
+    /**
+     * Removes event listeners
+     */
+    unlisten : function(target, events) {
+        events.forEach(function(e) {
+            this.removeEvent(target, e);
+        }, this);
+    },
+
+    addEvent : function(target, eventName) {
+        $(target).on(eventName, boundHandler);
+    },
+
+    removeEvent : function(target, eventName) {
+        $(target).off(eventName, boundHandler);
+    },
+
+    getTarget : function(event) {
+        return event._target;
+    },
+
+    /**
+     * Creates a new Event of type `type`, based on the information in `event`
+     */
+    makeEvent : function(type, event) {
+        var e = new PointerEvent(type, event);
+        if(event.preventDefault) {
+            e.preventDefault = event.preventDefault;
+        }
+
+        e._target = e._target || event.target;
+
+        return e;
+    },
+
+    /**
+     * Dispatches the event to its target
+     */
+    dispatchEvent : function(event) {
+        var target = this.getTarget(event);
+        if(target) {
+            return $(target).trigger(event);
+        }
+    },
+
+    /**
+     * Makes and dispatch an event in one call
+     */
+    fireEvent : function(type, event) {
+        var e = this.makeEvent(type, event);
+        return this.dispatchEvent(e);
+    }
+};
+
+function boundHandler() {
+    dispatcher.eventHandler.apply(dispatcher, arguments);
+}
+
+var CLICK_COUNT_TIMEOUT = 200,
+    // Radius around touchend that swallows mouse events
+    MOUSE_DEDUP_DIST = 25,
+    MOUSE_POINTER_ID = 1,
+    // This should be long enough to ignore compat mouse events made by touch
+    TOUCH_DEDUP_TIMEOUT = 2500,
+    // A distance for which touchmove should fire pointercancel event
+    TOUCHMOVE_HYSTERESIS = 20;
+
+// handler block for native mouse events
+var mouseEvents = {
+    POINTER_TYPE : 'mouse',
+    events : [
+        'mousedown',
+        'mousemove',
+        'mouseup',
+        'mouseover',
+        'mouseout'
+    ],
+
+    register : function(target) {
+        dispatcher.listen(target, this.events);
+    },
+
+    unregister : function(target) {
+        dispatcher.unlisten(target, this.events);
+    },
+
+    lastTouches : [],
+
+    // collide with the global mouse listener
+    isEventSimulatedFromTouch : function(event) {
+        var lts = this.lastTouches,
+            x = event.clientX,
+            y = event.clientY;
+
+        for(var i = 0, l = lts.length, t; i < l && (t = lts[i]); i++) {
+            // simulated mouse events will be swallowed near a primary touchend
+            var dx = Math.abs(x - t.x), dy = Math.abs(y - t.y);
+            if(dx <= MOUSE_DEDUP_DIST && dy <= MOUSE_DEDUP_DIST) {
+                return true;
+            }
+        }
+    },
+
+    prepareEvent : function(event) {
+        var e = cloneEvent(event);
+        e.pointerId = MOUSE_POINTER_ID;
+        e.isPrimary = true;
+        e.pointerType = this.POINTER_TYPE;
+        return e;
+    },
+
+    mousedown : function(event) {
+        if(!this.isEventSimulatedFromTouch(event)) {
+            if(pointermap.has(MOUSE_POINTER_ID)) {
+                // http://crbug/149091
+                this.cancel(event);
+            }
+
+            pointermap.set(MOUSE_POINTER_ID, event);
+
+            var e = this.prepareEvent(event);
+            dispatcher.down(e);
+        }
+    },
+
+    mousemove : function(event) {
+        if(!this.isEventSimulatedFromTouch(event)) {
+            var e = this.prepareEvent(event);
+            dispatcher.move(e);
+        }
+    },
+
+    mouseup : function(event) {
+        if(!this.isEventSimulatedFromTouch(event)) {
+            var p = pointermap.get(MOUSE_POINTER_ID);
+            if(p && p.button === event.button) {
+                var e = this.prepareEvent(event);
+                dispatcher.up(e);
+                this.cleanupMouse();
+            }
+        }
+    },
+
+    mouseover : function(event) {
+        if(!this.isEventSimulatedFromTouch(event)) {
+            var e = this.prepareEvent(event);
+            dispatcher.enterOver(e);
+        }
+    },
+
+    mouseout : function(event) {
+        if(!this.isEventSimulatedFromTouch(event)) {
+            var e = this.prepareEvent(event);
+            dispatcher.leaveOut(e);
+        }
+    },
+
+    cancel : function(inEvent) {
+        var e = this.prepareEvent(inEvent);
+        dispatcher.cancel(e);
+        this.cleanupMouse();
+    },
+
+    cleanupMouse : function() {
+        pointermap['delete'](MOUSE_POINTER_ID);
+    }
+};
+
+var touchEvents = {
+    events : [
+        'touchstart',
+        'touchmove',
+        'touchend',
+        'touchcancel'
+    ],
+
+    register : function(target) {
+        dispatcher.listen(target, this.events);
+    },
+
+    unregister : function(target) {
+        dispatcher.unlisten(target, this.events);
+    },
+
+    POINTER_TYPE : 'touch',
+    clickCount : 0,
+    resetId : null,
+    firstTouch : null,
+
+    isPrimaryTouch : function(touch) {
+        return this.firstTouch === touch.identifier;
+    },
+
+    /**
+     * Sets primary touch if there no pointers, or the only pointer is the mouse
+     */
+    setPrimaryTouch : function(touch) {
+        if(pointermap.pointers() === 0 ||
+                (pointermap.pointers() === 1 && pointermap.has(MOUSE_POINTER_ID))) {
+            this.firstTouch = touch.identifier;
+            this.firstXY = { X : touch.clientX, Y : touch.clientY };
+            this.scrolling = null;
+
+            this.cancelResetClickCount();
+        }
+    },
+
+    removePrimaryPointer : function(pointer) {
+        if(pointer.isPrimary) {
+            this.firstTouch = null;
+            //this.firstXY = null;
+            this.resetClickCount();
+        }
+    },
+
+    resetClickCount : function() {
+        var _this = this;
+        this.resetId = setTimeout(function() {
+            _this.clickCount = 0;
+            _this.resetId = null;
+        }, CLICK_COUNT_TIMEOUT);
+    },
+
+    cancelResetClickCount : function() {
+        this.resetId && clearTimeout(this.resetId);
+    },
+
+    typeToButtons : function(type) {
+        return type === 'touchstart' || type === 'touchmove'? 1 : 0;
+    },
+
+    findTarget : function(event) {
+        // Currently we don't interested in shadow dom handling
+        return doc.elementFromPoint(event.clientX, event.clientY);
+    },
+
+    touchToPointer : function(touch) {
+        var cte = this.currentTouchEvent,
+            e = cloneEvent(touch);
+
+        // Spec specifies that pointerId 1 is reserved for Mouse.
+        // Touch identifiers can start at 0.
+        // Add 2 to the touch identifier for compatibility.
+        e.pointerId = touch.identifier + 2;
+        e.target = this.findTarget(e);
+        e.bubbles = true;
+        e.cancelable = true;
+        e.detail = this.clickCount;
+        e.button = 0;
+        e.buttons = this.typeToButtons(cte.type);
+        e.width = touch.webkitRadiusX || touch.radiusX || 0;
+        e.height = touch.webkitRadiusY || touch.radiusY || 0;
+        e.pressure = touch.mozPressure || touch.webkitForce || touch.force || 0.5;
+        e.isPrimary = this.isPrimaryTouch(touch);
+        e.pointerType = this.POINTER_TYPE;
+
+        // forward touch preventDefaults
+        var _this = this;
+        e.preventDefault = function() {
+            _this.scrolling = false;
+            _this.firstXY = null;
+            cte.preventDefault();
+        };
+
+        return e;
+    },
+
+    processTouches : function(event, fn) {
+        var tl = event.originalEvent.changedTouches;
+        this.currentTouchEvent = event;
+        for(var i = 0, t; i < tl.length; i++) {
+            t = tl[i];
+            fn.call(this, this.touchToPointer(t));
+        }
+    },
+
+    shouldScroll : function(touchEvent) {
+        // return "true" for things to be much easier
+        return true;
+    },
+    
+    findTouch : function(touches, pointerId) {
+        for(var i = 0, l = touches.length, t; i < l && (t = touches[i]); i++) {
+            if(t.identifier === pointerId) {
+                return true;
+            }
+        }
+    },
+    
+    /**
+     * In some instances, a touchstart can happen without a touchend.
+     * This leaves the pointermap in a broken state.
+     * Therefore, on every touchstart, we remove the touches
+     * that did not fire a touchend event.
+     * 
+     * To keep state globally consistent, we fire a pointercancel
+     * for this "abandoned" touch
+     */
+    vacuumTouches : function(touchEvent) {
+        var touches = touchEvent.touches;
+        // pointermap.pointers() should be less than length of touches here, as the touchstart has not
+        // been processed yet.
+        if(pointermap.pointers() >= touches.length) {
+            var d = [];
+            
+            pointermap.forEach(function(pointer, pointerId) {
+                // Never remove pointerId == 1, which is mouse.
+                // Touch identifiers are 2 smaller than their pointerId, which is the
+                // index in pointermap.
+                if(pointerId === MOUSE_POINTER_ID || this.findTouch(touches, pointerId - 2)) return;
+                d.push(pointer.outEvent);
+            }, this);
+            
+            d.forEach(this.cancelOut, this);
+        }
+    },
+
+    /**
+     * Prevents synth mouse events from creating pointer events
+     */
+    dedupSynthMouse : function(touchEvent) {
+        var lts = mouseEvents.lastTouches,
+            t = touchEvent.changedTouches[0];
+
+        // only the primary finger will synth mouse events
+        if(this.isPrimaryTouch(t)) {
+            // remember x/y of last touch
+            var lt = { x : t.clientX, y : t.clientY };
+            lts.push(lt);
+
+            setTimeout(function() {
+                var i = lts.indexOf(lt);
+                i > -1 && lts.splice(i, 1);
+            }, TOUCH_DEDUP_TIMEOUT);
+        }
+    },
+    
+    touchstart : function(event) {
+        var touchEvent = event.originalEvent;
+
+        this.vacuumTouches(touchEvent);
+        this.setPrimaryTouch(touchEvent.changedTouches[0]);
+        this.dedupSynthMouse(touchEvent);
+        
+        if(!this.scrolling) {
+            this.clickCount++;
+            this.processTouches(event, this.overDown);
+        }
+    },
+    
+    touchmove : function(event) {
+        var touchEvent = event.originalEvent;
+        if(!this.scrolling) {
+            if(this.scrolling === null && this.shouldScroll(touchEvent)) {
+                this.scrolling = true;
+            } else {
+                event.preventDefault();
+                this.processTouches(event, this.moveOverOut);
+            }
+        } else if(this.firstXY) {
+            var firstXY = this.firstXY,
+                touch = touchEvent.changedTouches[0],
+                dx = touch.clientX - firstXY.X,
+                dy = touch.clientY - firstXY.Y,
+                dd = Math.sqrt(dx * dx + dy * dy);
+            if(dd >= TOUCHMOVE_HYSTERESIS) {
+                this.touchcancel(event);
+                this.scrolling = true;
+                this.firstXY = null;
+            }
+        }
+    },
+    
+    touchend : function(event) {
+        var touchEvent = event.originalEvent;
+        this.dedupSynthMouse(touchEvent);
+        this.processTouches(event, this.upOut);
+    },
+    
+    touchcancel : function(event) {
+        this.processTouches(event, this.cancelOut);
+    },
+    
+    overDown : function(pEvent) {
+        var target = pEvent.target;
+        pointermap.set(pEvent.pointerId, {
+            target : target,
+            outTarget : target,
+            outEvent : pEvent
+        });
+        dispatcher.over(pEvent);
+        dispatcher.enter(pEvent);
+        dispatcher.down(pEvent);
+    },
+
+    moveOverOut : function(pEvent) {
+        var pointer = pointermap.get(pEvent.pointerId);
+
+        // a finger drifted off the screen, ignore it
+        if(!pointer) {
+            return;
+        }
+
+        dispatcher.move(pEvent);
+
+        var outEvent = pointer.outEvent,
+            outTarget = pointer.outTarget;
+
+        if(outEvent && outTarget !== pEvent.target) {
+            pEvent.relatedTarget = outTarget;
+            outEvent.relatedTarget = pEvent.target;
+            // recover from retargeting by shadow
+            outEvent.target = outTarget;
+
+            if(pEvent.target) {
+                dispatcher.leaveOut(outEvent);
+                dispatcher.enterOver(pEvent);
+            } else {
+                // clean up case when finger leaves the screen
+                pEvent.target = outTarget;
+                pEvent.relatedTarget = null;
+                this.cancelOut(pEvent);
+            }
+        }
+
+        pointer.outEvent = pEvent;
+        pointer.outTarget = pEvent.target;
+    },
+
+    upOut : function(pEvent) {
+        dispatcher.up(pEvent);
+        dispatcher.out(pEvent);
+        dispatcher.leave(pEvent);
+
+        this.cleanUpPointer(pEvent);
+    },
+
+    cancelOut : function(pEvent) {
+        dispatcher.cancel(pEvent);
+        dispatcher.out(pEvent);
+        dispatcher.leave(pEvent);
+        this.cleanUpPointer(pEvent);
+    },
+
+    cleanUpPointer : function(pEvent) {
+        pointermap['delete'](pEvent.pointerId);
+        this.removePrimaryPointer(pEvent);
+    }
+};
+
+var msEvents = {
+    events : [
+        'MSPointerDown',
+        'MSPointerMove',
+        'MSPointerUp',
+        'MSPointerOut',
+        'MSPointerOver',
+        'MSPointerCancel'
+    ],
+    
+    register : function(target) {
+        dispatcher.listen(target, this.events);
+    },
+    
+    unregister : function(target) {
+        dispatcher.unlisten(target, this.events);
+    },
+    
+    POINTER_TYPES : [
+        '',
+        'unavailable',
+        'touch',
+        'pen',
+        'mouse'
+    ],
+    
+    prepareEvent : function(event) {
+        var e = cloneEvent(event);
+        HAS_BITMAP_TYPE && (e.pointerType = this.POINTER_TYPES[event.pointerType]);
+        return e;
+    },
+    
+    MSPointerDown : function(event) {
+        pointermap.set(event.pointerId, event);
+        var e = this.prepareEvent(event);
+        dispatcher.down(e);
+    },
+    
+    MSPointerMove : function(event) {
+        var e = this.prepareEvent(event);
+        dispatcher.move(e);
+    },
+    
+    MSPointerUp : function(event) {
+        var e = this.prepareEvent(event);
+        dispatcher.up(e);
+        this.cleanup(event.pointerId);
+    },
+    
+    MSPointerOut : function(event) {
+        var e = this.prepareEvent(event);
+        dispatcher.leaveOut(e);
+    },
+    
+    MSPointerOver : function(event) {
+        var e = this.prepareEvent(event);
+        dispatcher.enterOver(e);
+    },
+    
+    MSPointerCancel : function(event) {
+        var e = this.prepareEvent(event);
+        dispatcher.cancel(e);
+        this.cleanup(event.pointerId);
+    },
+    
+    cleanup : function(id) {
+        pointermap['delete'](id);
+    }
+};
+
+var navigator = window.navigator;
+if(navigator.msPointerEnabled) {
+    dispatcher.registerSource('ms', msEvents);
+} else {
+    dispatcher.registerSource('mouse', mouseEvents);
+    if(typeof window.ontouchstart !== 'undefined') {
+        dispatcher.registerSource('touch', touchEvents);
+    }
+}
+
+dispatcher.register(doc);
+
+}));
+
+/* end: ../../libs/bem-core/common.blocks/jquery/__event/_type/jquery__event_type_pointernative.js */
+/* begin: ../../libs/bem-core/common.blocks/keyboard/__codes/keyboard__codes.js */
+/**
+ * @module keyboard__codes
+ */
+modules.define('keyboard__codes', function(provide) {
+
+provide(/** @exports */{
+    BACKSPACE : 8,
+    TAB : 9,
+    ENTER : 13,
+    CAPS_LOCK : 20,
+    ESC : 27,
+    SPACE : 32,
+    PAGE_UP : 33,
+    PAGE_DOWN : 34,
+    END : 35,
+    HOME : 36,
+    LEFT : 37,
+    UP : 38,
+    RIGHT : 39,
+    DOWN : 40,
+    INSERT : 41,
+    DELETE : 42
+});
+
+});
+
+/* end: ../../libs/bem-core/common.blocks/keyboard/__codes/keyboard__codes.js */
+/* begin: ../../libs/bem-components/common.blocks/control/control.js */
+/**
+ * @module control
+ */
+
+modules.define(
+    'control',
+    ['i-bem__dom', 'dom', 'next-tick'],
+    function(provide, BEMDOM, dom, nextTick) {
+
+/**
+ * @exports
+ * @class control
+ * @abstract
+ * @bem
+ */
+provide(BEMDOM.decl(this.name, /** @lends control.prototype */{
+    beforeSetMod : {
+        'focused' : {
+            'true' : function() {
+                return !this.hasMod('disabled');
+            }
+        }
+    },
+
+    onSetMod : {
+        'js' : {
+            'inited' : function() {
+                this._focused = dom.containsFocus(this.elem('control'));
+                this._focused?
+                    // if control is already in focus, we need to set focused mod
+                    this.setMod('focused') :
+                    // if block already has focused mod, we need to focus control
+                    this.hasMod('focused') && this._focus();
+
+                this._tabIndex = this.elem('control').attr('tabindex');
+                if(this.hasMod('disabled') && this._tabIndex !== 'undefined')
+                    this.elem('control').removeAttr('tabindex');
+            }
+        },
+
+        'focused' : {
+            'true' : function() {
+                this._focused || this._focus();
+            },
+
+            '' : function() {
+                this._focused && this._blur();
+            }
+        },
+
+        'disabled' : {
+            '*' : function(modName, modVal) {
+                this.elem('control').prop(modName, !!modVal);
+            },
+
+            'true' : function() {
+                this.delMod('focused');
+                typeof this._tabIndex !== 'undefined' &&
+                    this.elem('control').removeAttr('tabindex');
+            },
+
+            '' : function() {
+                typeof this._tabIndex !== 'undefined' &&
+                    this.elem('control').attr('tabindex', this._tabIndex);
+            }
+        }
+    },
+
+    /**
+     * Returns name of control
+     * @returns {String}
+     */
+    getName : function() {
+        return this.elem('control').attr('name') || '';
+    },
+
+    /**
+     * Returns control value
+     * @returns {String}
+     */
+    getVal : function() {
+        return this.elem('control').val();
+    },
+
+    _onFocus : function() {
+        this._focused = true;
+        this.setMod('focused');
+    },
+
+    _onBlur : function() {
+        this._focused = false;
+        this.delMod('focused');
+    },
+
+    _focus : function() {
+        dom.isFocusable(this.elem('control')) && this.elem('control').focus();
+    },
+
+    _blur : function() {
+        this.elem('control').blur();
+    }
+}, /** @lends control */{
+    live : function() {
+        this
+            .liveBindTo('control', 'focusin', this.prototype._onFocus)
+            .liveBindTo('control', 'focusout', this.prototype._onBlur);
+
+        var focused = dom.getFocused();
+        if(focused.hasClass(this.buildClass('control'))) {
+            var _this = this; // TODO: https://github.com/bem/bem-core/issues/425
+            nextTick(function() {
+                if(focused[0] === dom.getFocused()[0]) {
+                    var block = focused.closest(_this.buildSelector());
+                    block && block.bem(_this.getName());
+                }
+            });
+        }
+    }
+}));
+
+});
+
+/* end: ../../libs/bem-components/common.blocks/control/control.js */
+/* begin: ../../libs/bem-components/desktop.blocks/control/control.js */
+/** @module control */
+
+modules.define(
+    'control',
+    function(provide, Control) {
+
+provide(Control.decl({
+    beforeSetMod : {
+        'hovered' : {
+            'true' : function() {
+                return !this.hasMod('disabled');
+            }
+        }
+    },
+
+    onSetMod : {
+        'disabled' : {
+            'true' : function() {
+                this.__base.apply(this, arguments);
+                this.delMod('hovered');
+            }
+        },
+
+        'hovered' : {
+            'true' : function() {
+                this.bindTo('mouseleave', this._onMouseLeave);
+            },
+
+            '' : function() {
+                this.unbindFrom('mouseleave', this._onMouseLeave);
+            }
+        }
+    },
+
+    _onMouseOver : function() {
+        this.setMod('hovered');
+    },
+
+    _onMouseLeave : function() {
+        this.delMod('hovered');
+    }
+}, {
+    live : function() {
+        return this
+            .liveBindTo('mouseover', this.prototype._onMouseOver)
+            .__base.apply(this, arguments);
+    }
+}));
+
+});
+
+/* end: ../../libs/bem-components/desktop.blocks/control/control.js */
 /* begin: ../../libs/bem-core/common.blocks/i-bem/__dom/_init/i-bem__dom_init_auto.js */
 /**
  * Auto initialization on DOM ready
@@ -1821,3 +3826,46 @@ provide(
 });
 
 /* end: ../../libs/bem-core/common.blocks/loader/_type/loader_type_js.js */
+/* begin: ../../libs/bem-core/common.blocks/jquery/__event/_type/jquery__event_type_pointerpressrelease.js */
+modules.define('jquery', function(provide, $) {
+
+$.each({
+    pointerpress : 'pointerdown',
+    pointerrelease : 'pointerup pointercancel'
+}, function(spec, origEvent) {
+    function eventHandler(e) {
+        var res, origType = e.handleObj.origType;
+
+        if(!e.button) {
+            e.type = spec;
+            res = $.event.dispatch.apply(this, arguments);
+            e.type = origType;
+        }
+
+        return res;
+    }
+
+    $.event.special[spec] = {
+        setup : function() {
+            $(this).on(origEvent, eventHandler);
+            return false;
+        },
+        teardown : function() {
+            $(this).off(origEvent, eventHandler);
+            return false;
+        }
+    };
+});
+
+provide($);
+
+});
+
+/* end: ../../libs/bem-core/common.blocks/jquery/__event/_type/jquery__event_type_pointerpressrelease.js */
+/* begin: ../../common.blocks/button/_type/button_type_maxim.js */
+jQuery(
+	function(){('.button').click(function(e){
+		alert('clicked');
+	});
+});
+/* end: ../../common.blocks/button/_type/button_type_maxim.js */
