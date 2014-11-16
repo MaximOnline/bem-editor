@@ -1,5 +1,5 @@
 module.exports = function(config) {
-  config.node('pages/index', function(nodeConfig) {
+  config.node('pages/article', function(nodeConfig) {
     nodeConfig.addTechs([
       [ require('enb/techs/levels'), { levels: getLevels(config) } ],
       [ require("enb/techs/file-provider"), { target: "?.bemjson.js" } ],
@@ -9,20 +9,34 @@ module.exports = function(config) {
       require('enb-bh/techs/bh-client'),
       require('enb/techs/deps'),
       require('enb/techs/files'),
-      require('enb/techs/css-stylus'),
+      require('enb-stylus/techs/css-stylus'),
       require('enb-bh/techs/html-from-bemjson'),
       [ require('enb-diverse-js/techs/browser-js'), { target: '?.pre.js' }],
-      [ require('enb-modules/techs/prepend-modules'), { target: '?.js', source: '?.pre.js' }],
-      // require('enb/techs/js'),
-      // [ require('enb/techs/file-copy'), { sourceTarget: '?.js', destTarget: '_?.js' } ],
+      require('enb/techs/js'),
+      [ require('enb/techs/file-copy'), { sourceTarget: '?.js', destTarget: '_?.js' } ],
       [ require('enb/techs/file-copy'), { sourceTarget: '?.css', destTarget: '_?.css' } ]
     ]);
-
 
   nodeConfig.addTargets(['?.html', '?.bemdecl.js', '?.deps.js', '_?.js', '_?.css', ]);
        
 
   });
+  config.nodes('storage/*', function(nodeConfig){
+	nodeConfig.addTechs([
+		[require('enb/techs/levels'), {levels: getLevels(config)}],
+		[require('enb/techs/file-provider'), {target: 'article.bemjson'}],
+		[require('enb/techs/file-provider'), {target: '../../pages/article/article.bh.js'}],
+		[
+			require('enb-bh/techs/html-from-bemjson'), 
+			{
+			bemjsonFile: 'article.bemjson',
+			target: 'article.html',
+			bhFile: '../../pages/article/article.bh.js'
+			}
+		]
+	]);
+  nodeConfig.addTargets(['article.html']);
+});
 };
 
 

@@ -4,11 +4,12 @@
   "description": "Ksenia, Artem, Kolya",
   "main": "index.js",
   "dependencies": {
-    "enb-bh": "*",
     "bh": "*",
-    "enb-modules": "*",
     "enb": "*",
+    "enb-bh": "*",
     "enb-diverse-js": "*",
+    "enb-modules": "*",
+    "enb-stylus": "^1.1.5",
     "ym": "*"
   },
   "devDependencies": {},

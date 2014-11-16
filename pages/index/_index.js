@@ -348,14 +348,14 @@ var DOM = BEM.decl('i-bem__dom',/** @lends BEMDOM.prototype */{
         select && (domElems = domElems.add(ctxElem[select](selector)));
 
         if(onlyFirst) {
-            return domElems[0]? initBlock(blockName, domElems.eq(0), undef, true) : null;
+            return domElems[0]? initBlock(blockName, domElems.eq(0), undef, true)._init() : null;
         }
 
         var res = [],
             uniqIds = {};
 
         domElems.each(function(i, domElem) {
-            var block = initBlock(blockName, $(domElem), undef, true);
+            var block = initBlock(blockName, $(domElem), undef, true)._init();
             if(!uniqIds[block._uniqId]) {
                 uniqIds[block._uniqId] = true;
                 res.push(block);
@@ -1481,7 +1481,7 @@ var DOM = BEM.decl('i-bem__dom',/** @lends BEMDOM.prototype */{
  * @returns {BEMDOM}
  */
 $.fn.bem = function(blockName, params) {
-    return initBlock(blockName, this, params, true);
+    return initBlock(blockName, this, params, true)._init();
 };
 
 // Set default scope after DOM ready
@@ -2707,7 +2707,7 @@ $(function() {
 
 /* end: ../../libs/bem-core/common.blocks/jquery/__event/_type/jquery__event_type_pointerclick.js */
 /* begin: ../../libs/bem-core/common.blocks/jquery/__event/_type/jquery__event_type_pointernative.js */
-/**
+/*!
  * Basic pointer events polyfill
  */
 ;(function(global, factory) {
@@ -2739,7 +2739,7 @@ var doc = document,
 delete $.event.special.pointerenter;
 delete $.event.special.pointerleave;
 
-/**
+/*!
  * Returns a snapshot of inEvent, with writable properties.
  *
  * @param {Event} event An event that contains properties to copy.
@@ -2778,7 +2778,7 @@ var MOUSE_PROPS = {
     mousePropsLen = mouseProps.length,
     mouseDefaults = mouseProps.map(function(prop) { return MOUSE_PROPS[prop] });
 
-/**
+/*!
  * Pointer event constructor
  *
  * @param {String} type
@@ -2829,7 +2829,7 @@ function PointerEvent(type, params) {
     return e;
 }
 
-/**
+/*!
  * Implements a map of pointer states
  * @returns {PointerMap}
  * @constructor
@@ -2896,7 +2896,7 @@ var dispatcher = {
     eventMap : {},
     eventSourceList : [],
 
-    /**
+    /*!
      * Add a new event source that will generate pointer events
      */
     registerSource : function(name, source) {
@@ -2998,7 +2998,7 @@ var dispatcher = {
         e._handledByPE = true;
     },
 
-    /**
+    /*!
      * Sets up event listeners
      */
     listen : function(target, events) {
@@ -3007,7 +3007,7 @@ var dispatcher = {
         }, this);
     },
 
-    /**
+    /*!
      * Removes event listeners
      */
     unlisten : function(target, events) {
@@ -3028,7 +3028,7 @@ var dispatcher = {
         return event._target;
     },
 
-    /**
+    /*!
      * Creates a new Event of type `type`, based on the information in `event`
      */
     makeEvent : function(type, event) {
@@ -3042,7 +3042,7 @@ var dispatcher = {
         return e;
     },
 
-    /**
+    /*!
      * Dispatches the event to its target
      */
     dispatchEvent : function(event) {
@@ -3052,7 +3052,7 @@ var dispatcher = {
         }
     },
 
-    /**
+    /*!
      * Makes and dispatch an event in one call
      */
     fireEvent : function(type, event) {
@@ -3200,7 +3200,7 @@ var touchEvents = {
         return this.firstTouch === touch.identifier;
     },
 
-    /**
+    /*!
      * Sets primary touch if there no pointers, or the only pointer is the mouse
      */
     setPrimaryTouch : function(touch) {
@@ -3287,7 +3287,7 @@ var touchEvents = {
         // return "true" for things to be much easier
         return true;
     },
-    
+
     findTouch : function(touches, pointerId) {
         for(var i = 0, l = touches.length, t; i < l && (t = touches[i]); i++) {
             if(t.identifier === pointerId) {
@@ -3295,13 +3295,13 @@ var touchEvents = {
             }
         }
     },
-    
-    /**
+
+    /*!
      * In some instances, a touchstart can happen without a touchend.
      * This leaves the pointermap in a broken state.
      * Therefore, on every touchstart, we remove the touches
      * that did not fire a touchend event.
-     * 
+     *
      * To keep state globally consistent, we fire a pointercancel
      * for this "abandoned" touch
      */
@@ -3311,7 +3311,7 @@ var touchEvents = {
         // been processed yet.
         if(pointermap.pointers() >= touches.length) {
             var d = [];
-            
+
             pointermap.forEach(function(pointer, pointerId) {
                 // Never remove pointerId == 1, which is mouse.
                 // Touch identifiers are 2 smaller than their pointerId, which is the
@@ -3319,12 +3319,12 @@ var touchEvents = {
                 if(pointerId === MOUSE_POINTER_ID || this.findTouch(touches, pointerId - 2)) return;
                 d.push(pointer.outEvent);
             }, this);
-            
+
             d.forEach(this.cancelOut, this);
         }
     },
 
-    /**
+    /*!
      * Prevents synth mouse events from creating pointer events
      */
     dedupSynthMouse : function(touchEvent) {
@@ -3343,20 +3343,20 @@ var touchEvents = {
             }, TOUCH_DEDUP_TIMEOUT);
         }
     },
-    
+
     touchstart : function(event) {
         var touchEvent = event.originalEvent;
 
         this.vacuumTouches(touchEvent);
         this.setPrimaryTouch(touchEvent.changedTouches[0]);
         this.dedupSynthMouse(touchEvent);
-        
+
         if(!this.scrolling) {
             this.clickCount++;
             this.processTouches(event, this.overDown);
         }
     },
-    
+
     touchmove : function(event) {
         var touchEvent = event.originalEvent;
         if(!this.scrolling) {
@@ -3379,17 +3379,17 @@ var touchEvents = {
             }
         }
     },
-    
+
     touchend : function(event) {
         var touchEvent = event.originalEvent;
         this.dedupSynthMouse(touchEvent);
         this.processTouches(event, this.upOut);
     },
-    
+
     touchcancel : function(event) {
         this.processTouches(event, this.cancelOut);
     },
-    
+
     overDown : function(pEvent) {
         var target = pEvent.target;
         pointermap.set(pEvent.pointerId, {
@@ -3466,15 +3466,15 @@ var msEvents = {
         'MSPointerOver',
         'MSPointerCancel'
     ],
-    
+
     register : function(target) {
         dispatcher.listen(target, this.events);
     },
-    
+
     unregister : function(target) {
         dispatcher.unlisten(target, this.events);
     },
-    
+
     POINTER_TYPES : [
         '',
         'unavailable',
@@ -3482,46 +3482,46 @@ var msEvents = {
         'pen',
         'mouse'
     ],
-    
+
     prepareEvent : function(event) {
         var e = cloneEvent(event);
         HAS_BITMAP_TYPE && (e.pointerType = this.POINTER_TYPES[event.pointerType]);
         return e;
     },
-    
+
     MSPointerDown : function(event) {
         pointermap.set(event.pointerId, event);
         var e = this.prepareEvent(event);
         dispatcher.down(e);
     },
-    
+
     MSPointerMove : function(event) {
         var e = this.prepareEvent(event);
         dispatcher.move(e);
     },
-    
+
     MSPointerUp : function(event) {
         var e = this.prepareEvent(event);
         dispatcher.up(e);
         this.cleanup(event.pointerId);
     },
-    
+
     MSPointerOut : function(event) {
         var e = this.prepareEvent(event);
         dispatcher.leaveOut(e);
     },
-    
+
     MSPointerOver : function(event) {
         var e = this.prepareEvent(event);
         dispatcher.enterOver(e);
     },
-    
+
     MSPointerCancel : function(event) {
         var e = this.prepareEvent(event);
         dispatcher.cancel(e);
         this.cleanup(event.pointerId);
     },
-    
+
     cleanup : function(id) {
         pointermap['delete'](id);
     }
@@ -3774,50 +3774,65 @@ modules.define('loader_type_js', function(provide) {
 var loading = {},
     loaded = {},
     head = document.getElementsByTagName('head')[0],
-    onLoad = function(path) {
-        loaded[path] = true;
+    runCallbacks = function(path, type) {
         var cbs = loading[path], cb, i = 0;
         delete loading[path];
         while(cb = cbs[i++]) {
-            cb();
+            cb[type] && cb[type]();
         }
+    },
+    onSuccess = function(path) {
+        loaded[path] = true;
+        runCallbacks(path, 'success');
+    },
+    onError = function(path) {
+        runCallbacks(path, 'error');
     };
 
 provide(
     /**
      * @exports
      * @param {String} path resource link
-     * @param {Function} cb executes when resource is loaded
+     * @param {Function} success to be called if the script succeeds
+     * @param {Function} error to be called if the script fails
      */
-    function(path, cb) {
+    function(path, success, error) {
         if(loaded[path]) {
-            cb();
+            success();
             return;
         }
 
         if(loading[path]) {
-            loading[path].push(cb);
+            loading[path].push({ success : success, error : error });
             return;
         }
 
-        loading[path] = [cb];
+        loading[path] = [{ success : success, error : error }];
 
         var script = document.createElement('script');
         script.type = 'text/javascript';
         script.charset = 'utf-8';
         script.src = (location.protocol === 'file:' && !path.indexOf('//')? 'http:' : '') + path;
-        script.onreadystatechange === null?
+
+        if('onload' in script) {
+            script.onload = function() {
+                script.onload = script.onerror = null;
+                onSuccess(path);
+            };
+
+            script.onerror = function() {
+                script.onload = script.onerror = null;
+                onError(path);
+            };
+        } else {
             script.onreadystatechange = function() {
                 var readyState = this.readyState;
                 if(readyState === 'loaded' || readyState === 'complete') {
                     script.onreadystatechange = null;
-                    onLoad(path);
+                    onSuccess(path);
                 }
-            } :
-            script.onload = script.onerror = function() {
-                script.onload = script.onerror = null;
-                onLoad(path);
             };
+        }
 
         head.insertBefore(script, head.lastChild);
     }

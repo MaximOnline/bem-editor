@@ -1,0 +1,7 @@
+.right-image-layout .right-image-layout__image {
+	float: right;
+}
+
+.right-image-layout .right-image-layout__text {
+	float: left;
+}

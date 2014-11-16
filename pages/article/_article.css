@@ -1,0 +1,30 @@
+/* /var/www/eMeditor/common.blocks/left-image-layout/left-image-layout.css: begin */ /**/
+    .left-image-layout__image {
+    	float: left;
+    }
+    
+    .left-image-layout__text {
+    	float: right;
+    }
+    
+/* /var/www/eMeditor/common.blocks/left-image-layout/left-image-layout.css: end */ /**/
+
+/* /var/www/eMeditor/common.blocks/right-image-layout/right-image-layout.css: begin */ /**/
+    .right-image-layout .right-image-layout__image {
+    	float: right;
+    }
+    
+    .right-image-layout .right-image-layout__text {
+    	float: left;
+    }
+/* /var/www/eMeditor/common.blocks/right-image-layout/right-image-layout.css: end */ /**/
+
+/* /var/www/eMeditor/common.blocks/image/image.css: begin */ /**/
+    
+/* /var/www/eMeditor/common.blocks/image/image.css: end */ /**/
+
+/* /var/www/eMeditor/libs/bem-components/common.blocks/image/image.styl:begin */
+.image {
+  border: 0;
+}
+/* /var/www/eMeditor/libs/bem-components/common.blocks/image/image.styl:end */
