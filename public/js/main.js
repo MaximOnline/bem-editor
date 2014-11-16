@@ -130,7 +130,7 @@ editor.controller('Editor', function ($scope) {
             // during the first update
             // which is fired on the source sortable
             if (!ui.item.sortable.received && ui.item.sortable.droptarget.scope().slot){
-                var entity = ui.item.scope().inBlock ? ui.item.scope().inBlock.type.entity : ui.item.block.type.entity;
+                var entity = ui.item.scope().inBlock ? ui.item.scope().inBlock.type.entity : ui.item.scope().block.type.entity;
                 var allowed = ui.item.sortable.droptarget.scope().slot.allowed;
                 if (allowed.indexOf(entity)<0){
                     ui.item.sortable.cancel();
