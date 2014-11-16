@@ -1,0 +1,84 @@
+.wrap{
+    width: 1000px;
+    margin: 0 auto;
+}
+
+button{
+    padding: 5px;
+    border: solid 1px black;
+    background: white;
+    font-size: 20px;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+
+.controller, .content, .modes{
+    padding: 10px;
+    border-radius: 10px;
+    border: solid 1px #000000;
+}
+
+*{
+    font-family: 'Open Sans', sans-serif;
+}
+
+.block{
+    border: #000000 solid 1px;
+    padding: 10px;
+    margin-bottom: 10px;
+    position: relative;
+    background: #fee481;
+}
+
+.block, .block__layer{
+
+}
+
+.block__delete, .block__move, .block__inner_move{
+    text-transform: uppercase;
+    position: absolute;
+    border: solid black 1px;
+    padding: 5px;
+    right: 10px;
+    top: 5px;
+    cursor: pointer;
+}
+
+.block__move, .block__inner_move{
+    display: none;
+    right: 87px;
+}
+
+.structure .block__move, .structure .block__inner_move{
+    display: block;
+}
+
+.block__content{
+
+}
+
+.modes button.active{
+    background: #ffeba0;
+}
+
+.wrap .structure .block{
+    max-height: 50px;
+    overflow: hidden;
+}
+
+.wrap .structure .block.block__layer{
+    max-height: none;
+    overflow: auto;
+}
+
+.block__slot{
+    padding: 10px;
+    border: solid black 1px;
+}
+
+.items{
+    padding: 20px;
+    border: solid 1px red;
+}
